@@ -1,4 +1,5 @@
 package com.curescript.dto;
 
-public class Prescription {
+public class MedicineDTO {
+
 }
