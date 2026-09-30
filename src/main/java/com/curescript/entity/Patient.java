@@ -2,6 +2,8 @@ package com.curescript.entity;
 
 import jakarta.persistence.*;
 
+import java.util.List;
+
 @Entity
 @Table(name="patients")
 public class Patient {
@@ -14,6 +16,20 @@ public class Patient {
     private String email;
     @Column(nullable = false)
     private String password;
+
+    @OneToMany(
+            mappedBy = "patient",
+            cascade = CascadeType.ALL
+    )
+    private List<Prescription> prescriptions;
+
+    public List<Prescription> getPrescriptions() {
+        return prescriptions;
+    }
+
+    public void setPrescriptions(List<Prescription> prescriptions) {
+        this.prescriptions = prescriptions;
+    }
 
     @Override
     public String toString() {

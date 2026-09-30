@@ -1,5 +1,8 @@
 package com.curescript.repository;
 
-public class RemedySuggestionRepository {
+import com.curescript.entity.RemedySuggestion;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+public interface RemedySuggestionRepository extends JpaRepository<RemedySuggestion,Long> {
 
 }

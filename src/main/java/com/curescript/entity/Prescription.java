@@ -3,6 +3,8 @@ package com.curescript.entity;
 import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name="prescription")
@@ -18,6 +20,20 @@ public class Prescription {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "patient_id", nullable=false)
     private Patient patient;
+
+    @OneToMany(
+            mappedBy = "prescription",
+            fetch = FetchType.LAZY
+    )
+    private List<Medicine> medicines;
+
+    public List<Medicine> getMedicines() {
+        return medicines;
+    }
+
+    public void setMedicines(List<Medicine> medicines) {
+        this.medicines = medicines;
+    }
 
     public Patient getPatient() {
         return patient;
