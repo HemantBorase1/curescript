@@ -1,10 +1,8 @@
-
 package com.curescript.service;
 
 import com.curescript.dto.PatientDTO;
 import com.curescript.entity.Patient;
 import com.curescript.repository.PatientRepository;
-
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -86,5 +84,45 @@ public class PatientService {
         }
 
         return patientDTOs;
+    }
+    public PatientDTO updatePatient(Long id, PatientDTO patientDTO) {
+
+        Optional<Patient> optionalPatient =
+                patientRepository.findById(id);
+
+        if (optionalPatient.isEmpty()) {
+            throw new RuntimeException(
+                    "Patient not found with ID: " + id
+            );
+        }
+
+        Patient patient = optionalPatient.get();
+
+        patient.setName(patientDTO.getName());
+        patient.setEmail(patientDTO.getEmail());
+
+        Patient updatedPatient = patientRepository.save(patient);
+
+        PatientDTO responseDTO = new PatientDTO();
+
+        responseDTO.setId(updatedPatient.getId());
+        responseDTO.setName(updatedPatient.getName());
+        responseDTO.setEmail(updatedPatient.getEmail());
+
+        return responseDTO;
+    }
+    // Delete patient by ID
+    public void deletePatient(Long id) {
+
+        Optional<Patient> optionalPatient =
+                patientRepository.findById(id);
+
+        if (optionalPatient.isEmpty()) {
+            throw new RuntimeException(
+                    "Patient not found with ID: " + id
+            );
+        }
+
+        patientRepository.delete(optionalPatient.get());
     }
 }

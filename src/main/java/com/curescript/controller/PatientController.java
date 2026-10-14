@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 
 
 import java.util.List;
@@ -50,4 +51,26 @@ public class PatientController {
 
         return ResponseEntity.ok(patients);
     }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<PatientDTO> updatePatient(
+            @PathVariable Long id,
+            @RequestBody PatientDTO patientDTO) {
+
+        PatientDTO updatedPatient =
+                patientService.updatePatient(id, patientDTO);
+
+        return ResponseEntity.ok(updatedPatient);
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deletePatient(
+            @PathVariable Long id) {
+
+        patientService.deletePatient(id);
+
+        return ResponseEntity.noContent().build();
+    }
+
+
 }

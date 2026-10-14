@@ -8,20 +8,28 @@ public class MedicineDTO {
     private String dosage;
     private String frequency;
     private String duration;
-    private String plainExplaination;
+    private String plainExplanation;
 
-    public MedicineDTO(){
+    public MedicineDTO() {
 
     }
 
-    public MedicineDTO(Long id, Long prescriptionId, String name, String dosage, String frequency, String duration, String plainExplaination) {
+    public MedicineDTO(
+            Long id,
+            Long prescriptionId,
+            String name,
+            String dosage,
+            String frequency,
+            String duration,
+            String plainExplanation) {
+
         this.id = id;
         this.prescriptionId = prescriptionId;
         this.name = name;
         this.dosage = dosage;
         this.frequency = frequency;
         this.duration = duration;
-        this.plainExplaination = plainExplaination;
+        this.plainExplanation = plainExplanation;
     }
 
     public Long getId() {
@@ -72,11 +80,11 @@ public class MedicineDTO {
         this.duration = duration;
     }
 
-    public String getPlainExplaination() {
-        return plainExplaination;
+    public String getPlainExplanation() {
+        return plainExplanation;
     }
 
-    public void setPlainExplaination(String plainExplaination) {
-        this.plainExplaination = plainExplaination;
+    public void setPlainExplanation(String plainExplanation) {
+        this.plainExplanation = plainExplanation;
     }
 }
