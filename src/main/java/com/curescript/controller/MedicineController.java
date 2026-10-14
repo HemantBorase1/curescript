@@ -3,6 +3,7 @@ package com.curescript.controller;
 import com.curescript.dto.MedicineDTO;
 import com.curescript.service.MedicineService;
 
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -21,7 +22,7 @@ public class MedicineController {
 
     @PostMapping
     public ResponseEntity<MedicineDTO> createMedicine(
-            @RequestBody MedicineDTO medicineDTO) {
+          @Valid @RequestBody MedicineDTO medicineDTO) {
 
         MedicineDTO createdMedicine =
                 medicineService.createMedicine(medicineDTO);

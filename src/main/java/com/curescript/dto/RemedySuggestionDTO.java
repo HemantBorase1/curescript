@@ -1,10 +1,21 @@
 package com.curescript.dto;
 
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
+
 public class RemedySuggestionDTO {
 
     private Long id;
+
+    @NotNull(message = "Medicine ID is required")
+    @Positive(message = "Medicine ID must be greater than Zero")
     private Long medicineId;
+
+    @NotBlank(message = "Remedy text is required")
     private String remedyText;
+
+    @NotBlank(message = "Source is Required")
     private String source;
 
     public RemedySuggestionDTO(){

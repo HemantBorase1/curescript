@@ -1,11 +1,18 @@
 package com.curescript.dto;
 
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
+
 public class PrescriptionDTO {
 
     private Long id;
+    @NotNull(message = "Patient ID is required")
+    @Positive(message = "Patient ID must be greater than Zero")
     private Long patientId;
     private String uploadDate;
     private String rawImageUrl;
+    @NotBlank(message = "Doctor Name is Required")
     private String doctorName;
 
     public PrescriptionDTO(){

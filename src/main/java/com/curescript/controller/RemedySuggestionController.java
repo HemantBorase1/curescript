@@ -3,6 +3,7 @@ package com.curescript.controller;
 import com.curescript.dto.RemedySuggestionDTO;
 import com.curescript.service.RemedySuggestionService;
 
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -20,7 +21,7 @@ public class RemedySuggestionController {
 
     @PostMapping
     public ResponseEntity<RemedySuggestionDTO> createRemedySuggestion(
-            @RequestBody RemedySuggestionDTO remedySuggestionDTO) {
+       @Valid @RequestBody RemedySuggestionDTO remedySuggestionDTO) {
 
         RemedySuggestionDTO createdSuggestion =
                 remedySuggestionService.createRemedySuggestion(

@@ -1,12 +1,27 @@
 package com.curescript.dto;
 
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
+
 public class MedicineDTO {
 
     private Long id;
+
+    @NotNull(message = "Prescription ID is Required")
+    @Positive(message = "Prescription ID must be greater than Zero")
     private Long prescriptionId;
+
+    @NotBlank(message = "Medicine name is Required")
     private String name;
+
+    @NotBlank(message = "Dosage is Required")
     private String dosage;
+
+    @NotBlank(message = "Frequency is required")
     private String frequency;
+
+    @NotBlank(message = "Duration is required")
     private String duration;
     private String plainExplanation;
 

@@ -2,6 +2,7 @@ package com.curescript.controller;
 
 import com.curescript.dto.PatientDTO;
 import com.curescript.service.PatientService;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -24,7 +25,7 @@ public class PatientController {
 
     @PostMapping("/register")
     public ResponseEntity<PatientDTO> registerPatient(
-            @RequestBody PatientDTO patientDTO) {
+          @Valid @RequestBody PatientDTO patientDTO) {
 
         PatientDTO registeredPatient =
                 patientService.registerPatient(patientDTO);
@@ -55,7 +56,7 @@ public class PatientController {
     @PutMapping("/{id}")
     public ResponseEntity<PatientDTO> updatePatient(
             @PathVariable Long id,
-            @RequestBody PatientDTO patientDTO) {
+         @Valid @RequestBody PatientDTO patientDTO) {
 
         PatientDTO updatedPatient =
                 patientService.updatePatient(id, patientDTO);
