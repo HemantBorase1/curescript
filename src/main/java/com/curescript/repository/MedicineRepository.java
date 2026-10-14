@@ -1,4 +1,8 @@
 package com.curescript.repository;
 
-public class MedicineRepository {
+import com.curescript.entity.Medicine;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+public interface MedicineRepository extends JpaRepository<Medicine,Long> {
+
 }
