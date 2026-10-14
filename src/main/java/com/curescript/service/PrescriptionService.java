@@ -3,6 +3,7 @@
 import com.curescript.dto.PrescriptionDTO;
 import com.curescript.entity.Patient;
 import com.curescript.entity.Prescription;
+import com.curescript.exception.ResourceNotFoundException;
 import com.curescript.repository.PatientRepository;
 import com.curescript.repository.PrescriptionRepository;
 
@@ -75,7 +76,7 @@ public class PrescriptionService {
         Prescription prescription = prescriptionRepository
                 .findById(id)
                 .orElseThrow(() ->
-                        new RuntimeException(
+                        new ResourceNotFoundException(
                                 "Prescription not found with ID: " + id
                         )
                 );
@@ -104,8 +105,9 @@ public class PrescriptionService {
          // Check whether the patient exists
          patientRepository.findById(patientId)
                  .orElseThrow(() ->
-                         new RuntimeException(
-                                 "Patient not found with ID: " + patientId
+                         new ResourceNotFoundException(
+                                 "Patient not found with ID: "
+                                         + patientId
                          )
                  );
 

@@ -4,6 +4,7 @@ import com.curescript.dto.PatientDTO;
 import com.curescript.entity.Patient;
 import com.curescript.repository.PatientRepository;
 import org.springframework.stereotype.Service;
+import com.curescript.exception.ResourceNotFoundException;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -49,7 +50,7 @@ public class PatientService {
                 patientRepository.findById(id);
 
         if (optionalPatient.isEmpty()) {
-            throw new RuntimeException(
+            throw new ResourceNotFoundException(
                     "Patient not found with ID: " + id
             );
         }

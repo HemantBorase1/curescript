@@ -3,6 +3,7 @@ package com.curescript.service;
 import com.curescript.dto.MedicineDTO;
 import com.curescript.entity.Medicine;
 import com.curescript.entity.Prescription;
+import com.curescript.exception.ResourceNotFoundException;
 import com.curescript.repository.MedicineRepository;
 import com.curescript.repository.PrescriptionRepository;
 
@@ -30,7 +31,7 @@ public class MedicineService {
         Prescription prescription = prescriptionRepository
                 .findById(medicineDTO.getPrescriptionId())
                 .orElseThrow(() ->
-                        new RuntimeException(
+                        new ResourceNotFoundException(
                                 "Prescription not found with ID: "
                                         + medicineDTO.getPrescriptionId()
                         )
@@ -71,7 +72,7 @@ public class MedicineService {
         Medicine medicine = medicineRepository
                 .findById(id)
                 .orElseThrow(() ->
-                        new RuntimeException(
+                        new ResourceNotFoundException(
                                 "Medicine not found with ID: " + id
                         )
                 );
@@ -98,7 +99,7 @@ public class MedicineService {
 
         prescriptionRepository.findById(prescriptionId)
                 .orElseThrow(() ->
-                        new RuntimeException(
+                        new ResourceNotFoundException(
                                 "Prescription not found with ID: "
                                         + prescriptionId
                         )

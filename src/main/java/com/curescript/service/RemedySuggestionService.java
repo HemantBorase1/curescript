@@ -3,6 +3,7 @@ package com.curescript.service;
 import com.curescript.dto.RemedySuggestionDTO;
 import com.curescript.entity.Medicine;
 import com.curescript.entity.RemedySuggestion;
+import com.curescript.exception.ResourceNotFoundException;
 import com.curescript.repository.MedicineRepository;
 import com.curescript.repository.RemedySuggestionRepository;
 
@@ -28,7 +29,7 @@ public class RemedySuggestionService {
         Medicine medicine = medicineRepository
                 .findById(remedySuggestionDTO.getMedicineId())
                 .orElseThrow(() ->
-                        new RuntimeException(
+                        new ResourceNotFoundException(
                                 "Medicine not found with ID: "
                                         + remedySuggestionDTO.getMedicineId()
                         )
@@ -72,7 +73,7 @@ public class RemedySuggestionService {
         RemedySuggestion suggestion =
                 remedySuggestionRepository.findById(id)
                         .orElseThrow(() ->
-                                new RuntimeException(
+                                new ResourceNotFoundException(
                                         "Remedy suggestion not found with ID: "
                                                 + id
                                 )
@@ -97,7 +98,7 @@ public class RemedySuggestionService {
         RemedySuggestion suggestion =
                 remedySuggestionRepository.findByMedicine_Id(medicineId)
                         .orElseThrow(() ->
-                                new RuntimeException(
+                                new ResourceNotFoundException(
                                         "Remedy suggestion not found for medicine ID: "
                                                 + medicineId
                                 )
