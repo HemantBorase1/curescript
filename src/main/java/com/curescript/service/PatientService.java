@@ -1,10 +1,13 @@
 package com.curescript.service;
 
+import com.curescript.dto.LoginRequestDTO;
 import com.curescript.dto.PatientDTO;
 import com.curescript.entity.Patient;
 import com.curescript.repository.PatientRepository;
 import org.springframework.stereotype.Service;
 import com.curescript.exception.ResourceNotFoundException;
+
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -14,9 +17,12 @@ import java.util.Optional;
 public class PatientService {
 
     private final PatientRepository patientRepository;
+    private final PasswordEncoder passwordEncoder;
 
-    public PatientService(PatientRepository patientRepository) {
+    public PatientService(PatientRepository patientRepository,
+                          PasswordEncoder passwordEncoder) {
         this.patientRepository = patientRepository;
+        this.passwordEncoder=passwordEncoder;
     }
 
     // Register a new patient
@@ -30,7 +36,7 @@ public class PatientService {
 
         patient.setName(patientDTO.getName());
         patient.setEmail(patientDTO.getEmail());
-        patient.setPassword(patientDTO.getPassword());
+        patient.setPassword(passwordEncoder.encode(patientDTO.getPassword()));
 
         Patient savedPatient = patientRepository.save(patient);
 
@@ -43,6 +49,29 @@ public class PatientService {
         return responseDTO;
     }
 
+    public PatientDTO loginPatient(LoginRequestDTO loginRequestDTO) {
+
+        Patient patient = patientRepository
+                .findByEmail(loginRequestDTO.getEmail())
+                .orElseThrow(() ->
+                        new RuntimeException("Invalid email or password"));
+
+        boolean passwordMatches = passwordEncoder.matches(
+                loginRequestDTO.getPassword(),
+                patient.getPassword()
+        );
+
+        if (!passwordMatches) {
+            throw new RuntimeException("Invalid email or password");
+        }
+
+        PatientDTO patientDTO = new PatientDTO();
+        patientDTO.setId(patient.getId());
+        patientDTO.setName(patient.getName());
+        patientDTO.setEmail(patient.getEmail());
+
+        return patientDTO;
+    }
     // Get patient by ID
     public PatientDTO getPatientById(Long id) {
 

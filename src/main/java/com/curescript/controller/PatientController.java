@@ -1,5 +1,6 @@
 package com.curescript.controller;
 
+import com.curescript.dto.LoginRequestDTO;
 import com.curescript.dto.PatientDTO;
 import com.curescript.service.PatientService;
 import jakarta.validation.Valid;
@@ -73,5 +74,14 @@ public class PatientController {
         return ResponseEntity.noContent().build();
     }
 
+    @PostMapping("/login")
+    public ResponseEntity<PatientDTO> loginPatient(
+            @Valid @RequestBody LoginRequestDTO loginRequestDTO) {
+
+        PatientDTO patientDTO =
+                patientService.loginPatient(loginRequestDTO);
+
+        return ResponseEntity.ok(patientDTO);
+    }
 
 }

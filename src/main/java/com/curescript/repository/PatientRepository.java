@@ -3,7 +3,11 @@ package com.curescript.repository;
 import com.curescript.entity.Patient;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-public interface PatientRepository extends JpaRepository<Patient,Long> {
+import java.util.Optional;
+
+public interface PatientRepository extends JpaRepository<Patient, Long> {
 
     boolean existsByEmail(String email);
+
+    Optional<Patient> findByEmail(String email);
 }

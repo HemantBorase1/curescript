@@ -1,6 +1,6 @@
 package com.curescript.dto;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -17,7 +17,7 @@ public class PatientDTO {
 
     @NotBlank(message = "Password is Required")
     @Size(min = 8,message = "Password must contain at least 8 characters.")
-    @JsonIgnore
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private String password;
 
     public PatientDTO() {
