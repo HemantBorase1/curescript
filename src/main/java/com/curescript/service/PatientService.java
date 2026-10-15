@@ -3,6 +3,7 @@ package com.curescript.service;
 import com.curescript.dto.LoginRequestDTO;
 import com.curescript.dto.PatientDTO;
 import com.curescript.entity.Patient;
+import com.curescript.exception.InvalidCredentialsException;
 import com.curescript.repository.PatientRepository;
 import org.springframework.stereotype.Service;
 import com.curescript.exception.ResourceNotFoundException;
@@ -12,17 +13,21 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import com.curescript.service.JwtService;
+import com.curescript.dto.LoginResponseDTO;
 
 @Service
 public class PatientService {
 
     private final PatientRepository patientRepository;
     private final PasswordEncoder passwordEncoder;
+    private final JwtService jwtService;
 
     public PatientService(PatientRepository patientRepository,
-                          PasswordEncoder passwordEncoder) {
+                          PasswordEncoder passwordEncoder, JwtService jwtService) {
         this.patientRepository = patientRepository;
         this.passwordEncoder=passwordEncoder;
+        this.jwtService = jwtService;
     }
 
     // Register a new patient
@@ -49,12 +54,12 @@ public class PatientService {
         return responseDTO;
     }
 
-    public PatientDTO loginPatient(LoginRequestDTO loginRequestDTO) {
+    public LoginResponseDTO loginPatient(LoginRequestDTO loginRequestDTO){
 
         Patient patient = patientRepository
                 .findByEmail(loginRequestDTO.getEmail())
                 .orElseThrow(() ->
-                        new RuntimeException("Invalid email or password"));
+                        new InvalidCredentialsException("Invalid email or password"));
 
         boolean passwordMatches = passwordEncoder.matches(
                 loginRequestDTO.getPassword(),
@@ -62,15 +67,23 @@ public class PatientService {
         );
 
         if (!passwordMatches) {
-            throw new RuntimeException("Invalid email or password");
+            throw new InvalidCredentialsException(
+                    "Invalid email or password"
+            );
         }
 
-        PatientDTO patientDTO = new PatientDTO();
-        patientDTO.setId(patient.getId());
-        patientDTO.setName(patient.getName());
-        patientDTO.setEmail(patient.getEmail());
+        String token = jwtService.generateToken(
+                patient.getId(),
+                patient.getEmail()
+        );
 
-        return patientDTO;
+        return new LoginResponseDTO(
+                patient.getId(),
+                patient.getName(),
+                patient.getEmail(),
+                token,
+                "Bearer"
+        );
     }
     // Get patient by ID
     public PatientDTO getPatientById(Long id) {
