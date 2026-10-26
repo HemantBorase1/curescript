@@ -1,3 +1,4 @@
+
 package com.curescript.service;
 
 import com.curescript.dto.MedicineDTO;
@@ -7,6 +8,9 @@ import com.curescript.exception.ResourceNotFoundException;
 import com.curescript.repository.MedicineRepository;
 import com.curescript.repository.PrescriptionRepository;
 
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -26,8 +30,10 @@ public class MedicineService {
         this.prescriptionRepository = prescriptionRepository;
     }
 
+    // Create medicine with prescription ownership validation
     public MedicineDTO createMedicine(MedicineDTO medicineDTO) {
 
+        // Step 1: Find the prescription
         Prescription prescription = prescriptionRepository
                 .findById(medicineDTO.getPrescriptionId())
                 .orElseThrow(() ->
@@ -37,6 +43,23 @@ public class MedicineService {
                         )
                 );
 
+        // Step 2: Get the logged-in patient's email
+        Authentication authentication =
+                SecurityContextHolder.getContext().getAuthentication();
+
+        String loggedInEmail = authentication.getName();
+
+        // Step 3: Check prescription ownership
+        String prescriptionOwnerEmail =
+                prescription.getPatient().getEmail();
+
+        if (!loggedInEmail.equalsIgnoreCase(prescriptionOwnerEmail)) {
+            throw new AccessDeniedException(
+                    "You are not allowed to add medicine to this prescription"
+            );
+        }
+
+        // Step 4: Create the medicine
         Medicine medicine = new Medicine();
 
         medicine.setPrescription(prescription);
@@ -48,8 +71,10 @@ public class MedicineService {
                 medicineDTO.getPlainExplanation()
         );
 
+        // Step 5: Save the medicine
         Medicine savedMedicine = medicineRepository.save(medicine);
 
+        // Step 6: Convert the saved medicine into a DTO
         MedicineDTO responseDTO = new MedicineDTO();
 
         responseDTO.setId(savedMedicine.getId());
@@ -66,9 +91,11 @@ public class MedicineService {
 
         return responseDTO;
     }
+
     // Get medicine by ID
     public MedicineDTO getMedicineById(Long id) {
 
+        // Step 1: Find the medicine
         Medicine medicine = medicineRepository
                 .findById(id)
                 .orElseThrow(() ->
@@ -77,27 +104,48 @@ public class MedicineService {
                         )
                 );
 
-        MedicineDTO medicineDTO = new MedicineDTO();
+        // Step 2: Get the logged-in patient's email
+        Authentication authentication =
+                SecurityContextHolder.getContext().getAuthentication();
 
-        medicineDTO.setId(medicine.getId());
-        medicineDTO.setPrescriptionId(
+        String loggedInEmail = authentication.getName();
+
+        // Step 3: Find the prescription owner
+        String prescriptionOwnerEmail =
+                medicine.getPrescription()
+                        .getPatient()
+                        .getEmail();
+
+        // Step 4: Check ownership
+        if (!loggedInEmail.equalsIgnoreCase(prescriptionOwnerEmail)) {
+            throw new AccessDeniedException(
+                    "You are not allowed to access this medicine"
+            );
+        }
+
+        // Step 5: Convert the entity into a DTO
+        MedicineDTO dto = new MedicineDTO();
+
+        dto.setId(medicine.getId());
+        dto.setPrescriptionId(
                 medicine.getPrescription().getId()
         );
-        medicineDTO.setName(medicine.getName());
-        medicineDTO.setDosage(medicine.getDosage());
-        medicineDTO.setFrequency(medicine.getFrequency());
-        medicineDTO.setDuration(medicine.getDuration());
-        medicineDTO.setPlainExplanation(
-                medicine.getPlainExplanation()
-        );
+        dto.setName(medicine.getName());
+        dto.setDosage(medicine.getDosage());
+        dto.setFrequency(medicine.getFrequency());
+        dto.setDuration(medicine.getDuration());
+        dto.setPlainExplanation(medicine.getPlainExplanation());
 
-        return medicineDTO;
+        return dto;
     }
+
     // Get all medicines for a prescription
     public List<MedicineDTO> getMedicinesByPrescriptionId(
             Long prescriptionId) {
 
-        prescriptionRepository.findById(prescriptionId)
+        // Step 1: Find the prescription
+        Prescription prescription = prescriptionRepository
+                .findById(prescriptionId)
                 .orElseThrow(() ->
                         new ResourceNotFoundException(
                                 "Prescription not found with ID: "
@@ -105,9 +153,27 @@ public class MedicineService {
                         )
                 );
 
+        // Step 2: Get the logged-in patient's email
+        Authentication authentication =
+                SecurityContextHolder.getContext().getAuthentication();
+
+        String loggedInEmail = authentication.getName();
+
+        // Step 3: Check prescription ownership
+        String prescriptionOwnerEmail =
+                prescription.getPatient().getEmail();
+
+        if (!loggedInEmail.equalsIgnoreCase(prescriptionOwnerEmail)) {
+            throw new AccessDeniedException(
+                    "You are not allowed to access these medicines"
+            );
+        }
+
+        // Step 4: Retrieve medicines for this prescription
         List<Medicine> medicines =
                 medicineRepository.findByPrescription_Id(prescriptionId);
 
+        // Step 5: Convert medicines to DTOs
         List<MedicineDTO> medicineDTOs = new ArrayList<>();
 
         for (Medicine medicine : medicines) {
@@ -115,7 +181,9 @@ public class MedicineService {
             MedicineDTO dto = new MedicineDTO();
 
             dto.setId(medicine.getId());
-            dto.setPrescriptionId(prescriptionId);
+            dto.setPrescriptionId(
+                    medicine.getPrescription().getId()
+            );
             dto.setName(medicine.getName());
             dto.setDosage(medicine.getDosage());
             dto.setFrequency(medicine.getFrequency());
