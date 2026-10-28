@@ -1,3 +1,4 @@
+
 package com.curescript.service;
 
 import com.curescript.dto.PrescriptionDTO;
@@ -6,187 +7,167 @@ import com.curescript.entity.Prescription;
 import com.curescript.exception.ResourceNotFoundException;
 import com.curescript.repository.PatientRepository;
 import com.curescript.repository.PrescriptionRepository;
+
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.access.AccessDeniedException;
-
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
- @Service
+@Service
 public class PrescriptionService {
 
     private final PrescriptionRepository prescriptionRepository;
     private final PatientRepository patientRepository;
+    private final CloudinaryService cloudinaryService;
 
     public PrescriptionService(
             PrescriptionRepository prescriptionRepository,
-            PatientRepository patientRepository) {
+            PatientRepository patientRepository,
+            CloudinaryService cloudinaryService) {
 
         this.prescriptionRepository = prescriptionRepository;
         this.patientRepository = patientRepository;
+        this.cloudinaryService = cloudinaryService;
     }
 
+    // Create a prescription using an existing image URL
+    public PrescriptionDTO createPrescription(
+            PrescriptionDTO prescriptionDTO) {
 
-     public PrescriptionDTO createPrescription(
-             PrescriptionDTO prescriptionDTO) {
+        Patient patient = getLoggedInPatient();
 
-         // Step 1: Get the logged-in user's email from JWT authentication
-         Authentication authentication =
-                 SecurityContextHolder.getContext().getAuthentication();
+        Prescription prescription = new Prescription();
+        prescription.setPatient(patient);
+        prescription.setUploadDate(LocalDateTime.now());
+        prescription.setRawImageUrl(prescriptionDTO.getRawImageUrl());
+        prescription.setDoctorName(prescriptionDTO.getDoctorName());
 
-         String loggedInEmail = authentication.getName();
+        Prescription savedPrescription =
+                prescriptionRepository.save(prescription);
 
-         // Step 2: Find the logged-in patient using their email
-         Patient patient = patientRepository
-                 .findByEmail(loggedInEmail)
-                 .orElseThrow(() ->
-                         new ResourceNotFoundException(
-                                 "Logged-in patient not found"
-                         )
-                 );
+        return convertToDTO(savedPrescription);
+    }
 
-         // Step 3: Create a new prescription
-         Prescription prescription = new Prescription();
+    // Upload image to Cloudinary and save its URL in MySQL
+    @Transactional
+    public PrescriptionDTO uploadPrescriptionImage(
+            MultipartFile file,
+            String doctorName) throws IOException {
 
-         prescription.setPatient(patient);
-         prescription.setUploadDate(LocalDateTime.now());
-         prescription.setRawImageUrl(
-                 prescriptionDTO.getRawImageUrl()
-         );
-         prescription.setDoctorName(
-                 prescriptionDTO.getDoctorName()
-         );
+        Patient patient = getLoggedInPatient();
 
-         // Step 4: Save the prescription
-         Prescription savedPrescription =
-                 prescriptionRepository.save(prescription);
+        // Upload the image first
+        String imageUrl =
+                cloudinaryService.uploadPrescriptionImage(file);
 
-         // Step 5: Convert the saved entity into a DTO
-         PrescriptionDTO responseDTO = new PrescriptionDTO();
+        // Save the returned URL in the prescription record
+        Prescription prescription = new Prescription();
+        prescription.setPatient(patient);
+        prescription.setUploadDate(LocalDateTime.now());
+        prescription.setRawImageUrl(imageUrl);
+        prescription.setDoctorName(doctorName);
 
-         responseDTO.setId(savedPrescription.getId());
-         responseDTO.setPatientId(
-                 savedPrescription.getPatient().getId()
-         );
-         responseDTO.setUploadDate(
-                 savedPrescription.getUploadDate().toString()
-         );
-         responseDTO.setRawImageUrl(
-                 savedPrescription.getRawImageUrl()
-         );
-         responseDTO.setDoctorName(
-                 savedPrescription.getDoctorName()
-         );
+        Prescription savedPrescription =
+                prescriptionRepository.save(prescription);
 
-         return responseDTO;
-     }
+        return convertToDTO(savedPrescription);
+    }
 
-     public PrescriptionDTO getPrescriptionById(Long id) {
+    // Get the authenticated patient from the JWT identity
+    private Patient getLoggedInPatient() {
 
-         // Step 1: Fetch the prescription from the database
-         Prescription prescription = prescriptionRepository
-                 .findById(id)
-                 .orElseThrow(() ->
-                         new ResourceNotFoundException(
-                                 "Prescription not found with ID: " + id
-                         )
-                 );
+        Authentication authentication =
+                SecurityContextHolder.getContext().getAuthentication();
 
-         // Step 2: Get the logged-in user's email
-         Authentication authentication =
-                 SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null
+                || !authentication.isAuthenticated()
+                || authentication.getName() == null) {
+            throw new AccessDeniedException(
+                    "Authentication is required"
+            );
+        }
 
-         String loggedInEmail = authentication.getName();
+        String loggedInEmail = authentication.getName();
 
-         // Step 3: Get the prescription owner's email
-         String prescriptionOwnerEmail =
-                 prescription.getPatient().getEmail();
+        return patientRepository.findByEmail(loggedInEmail)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Logged-in patient not found"
+                        )
+                );
+    }
 
-         // Step 4: Check ownership
-         if (!loggedInEmail.equalsIgnoreCase(prescriptionOwnerEmail)) {
-             throw new AccessDeniedException(
-                     "You are not allowed to access this prescription"
-             );
-         }
+    // Convert prescription entity to DTO
+    private PrescriptionDTO convertToDTO(Prescription prescription) {
 
-         // Step 5: Convert the entity into a DTO
-         PrescriptionDTO prescriptionDTO = new PrescriptionDTO();
+        PrescriptionDTO dto = new PrescriptionDTO();
 
-         prescriptionDTO.setId(prescription.getId());
-         prescriptionDTO.setPatientId(
-                 prescription.getPatient().getId()
-         );
-         prescriptionDTO.setUploadDate(
-                 prescription.getUploadDate().toString()
-         );
-         prescriptionDTO.setRawImageUrl(
-                 prescription.getRawImageUrl()
-         );
-         prescriptionDTO.setDoctorName(
-                 prescription.getDoctorName()
-         );
+        dto.setId(prescription.getId());
+        dto.setPatientId(prescription.getPatient().getId());
+        dto.setUploadDate(prescription.getUploadDate().toString());
+        dto.setRawImageUrl(prescription.getRawImageUrl());
+        dto.setDoctorName(prescription.getDoctorName());
 
-         return prescriptionDTO;
-     }
+        return dto;
+    }
 
-     public List<PrescriptionDTO> getPrescriptionsByPatientId(
-             Long patientId) {
+    // Get prescription by ID
+    public PrescriptionDTO getPrescriptionById(Long id) {
 
+        Prescription prescription = prescriptionRepository.findById(id)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Prescription not found with ID: " + id
+                        )
+                );
 
-         Authentication authentication =
-                 SecurityContextHolder.getContext().getAuthentication();
+        String loggedInEmail = getLoggedInPatient().getEmail();
+        String ownerEmail = prescription.getPatient().getEmail();
 
-         String loggedInEmail = authentication.getName();
+        if (!loggedInEmail.equalsIgnoreCase(ownerEmail)) {
+            throw new AccessDeniedException(
+                    "You are not allowed to access this prescription"
+            );
+        }
 
-         Patient patient = patientRepository
-                 .findById(patientId)
-                 .orElseThrow(() ->
-                         new ResourceNotFoundException(
-                                 "Patient not found with ID: " + patientId
-                         )
-                 );
+        return convertToDTO(prescription);
+    }
 
-         if (!loggedInEmail.equalsIgnoreCase(patient.getEmail())) {
-             throw new AccessDeniedException(
-                     "You are not allowed to access these prescriptions"
-             );
-         }
-         // Check whether the patient exists
-         patientRepository.findById(patientId)
-                 .orElseThrow(() ->
-                         new ResourceNotFoundException(
-                                 "Patient not found with ID: "
-                                         + patientId
-                         )
-                 );
+    // Get prescriptions belonging to the logged-in patient
+    public List<PrescriptionDTO> getPrescriptionsByPatientId(
+            Long patientId) {
 
-         // Fetch only this patient's prescriptions
-         List<Prescription> prescriptions =
-                 prescriptionRepository.findByPatient_Id(patientId);
+        Patient patient = patientRepository.findById(patientId)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Patient not found with ID: " + patientId
+                        )
+                );
 
-         List<PrescriptionDTO> prescriptionDTOs =
-                 new ArrayList<>();
+        String loggedInEmail = getLoggedInPatient().getEmail();
 
-         for (Prescription prescription : prescriptions) {
+        if (!loggedInEmail.equalsIgnoreCase(patient.getEmail())) {
+            throw new AccessDeniedException(
+                    "You are not allowed to access these prescriptions"
+            );
+        }
 
-             PrescriptionDTO dto = new PrescriptionDTO();
+        List<Prescription> prescriptions =
+                prescriptionRepository.findByPatient_Id(patientId);
 
-             dto.setId(prescription.getId());
-             dto.setPatientId(patientId);
-             dto.setUploadDate(
-                     prescription.getUploadDate().toString()
-             );
-             dto.setRawImageUrl(prescription.getRawImageUrl());
-             dto.setDoctorName(prescription.getDoctorName());
+        List<PrescriptionDTO> dtos = new ArrayList<>();
 
-             prescriptionDTOs.add(dto);
-         }
+        for (Prescription prescription : prescriptions) {
+            dtos.add(convertToDTO(prescription));
+        }
 
-         return prescriptionDTOs;
-     }
-
+        return dtos;
+    }
 }

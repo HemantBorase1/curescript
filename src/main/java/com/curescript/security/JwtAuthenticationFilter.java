@@ -4,6 +4,7 @@ package com.curescript.security;
 import com.curescript.service.JwtService;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
+
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -36,9 +37,21 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String authorizationHeader =
                 request.getHeader("Authorization");
 
+        // Temporary diagnostics: never print the actual token
+        System.out.println("Request path: " + request.getRequestURI());
+        System.out.println(
+                "Authorization header present: "
+                        + (authorizationHeader != null)
+        );
+        System.out.println(
+                "Bearer prefix present: "
+                        + (authorizationHeader != null
+                        && authorizationHeader.startsWith("Bearer "))
+        );
+
         // No token: let Spring Security handle authentication
-        if (authorizationHeader == null ||
-                !authorizationHeader.startsWith("Bearer ")) {
+        if (authorizationHeader == null
+                || !authorizationHeader.startsWith("Bearer ")) {
 
             filterChain.doFilter(request, response);
             return;
@@ -46,9 +59,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         String token = authorizationHeader.substring(7).trim();
 
-        // Reject an empty Bearer token
         if (token.isEmpty()) {
-            sendUnauthorized(response);
+            SecurityContextHolder.clearContext();
+            sendUnauthorized(response, "Empty Bearer token");
             return;
         }
 
@@ -59,7 +72,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             String email = claims.getSubject();
 
             if (email == null || email.isBlank()) {
-                sendUnauthorized(response);
+                SecurityContextHolder.clearContext();
+                sendUnauthorized(response, "Token subject is missing");
                 return;
             }
 
@@ -73,17 +87,27 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             SecurityContextHolder.getContext()
                     .setAuthentication(authentication);
 
+            System.out.println("JWT validation successful");
+
         } catch (JwtException | IllegalArgumentException exception) {
             SecurityContextHolder.clearContext();
-            sendUnauthorized(response);
+
+            // Log only the exception class, not the token
+            System.out.println(
+                    "JWT validation failed: "
+                            + exception.getClass().getSimpleName()
+            );
+
+            sendUnauthorized(response, "Invalid or expired token");
             return;
         }
 
         filterChain.doFilter(request, response);
     }
 
-    private void sendUnauthorized(HttpServletResponse response)
-            throws IOException {
+    private void sendUnauthorized(
+            HttpServletResponse response,
+            String message) throws IOException {
 
         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
         response.setContentType("application/json");
@@ -91,7 +115,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         response.getWriter().write(
                 "{\"error\":\"Unauthorized\","
-                        + "\"message\":\"Invalid or expired token\","
+                        + "\"message\":\"" + message + "\","
                         + "\"status\":401}"
         );
     }
