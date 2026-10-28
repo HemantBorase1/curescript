@@ -7,8 +7,8 @@ import jakarta.validation.constraints.Positive;
 public class PrescriptionDTO {
 
     private Long id;
-    @NotNull(message = "Patient ID is required")
-    @Positive(message = "Patient ID must be greater than Zero")
+//    @NotNull(message = "Patient ID is required")
+//    @Positive(message = "Patient ID must be greater than Zero")
     private Long patientId;
     private String uploadDate;
     private String rawImageUrl;

@@ -1,3 +1,4 @@
+
 package com.curescript.service;
 
 import com.curescript.dto.RemedySuggestionDTO;
@@ -7,6 +8,9 @@ import com.curescript.exception.ResourceNotFoundException;
 import com.curescript.repository.MedicineRepository;
 import com.curescript.repository.RemedySuggestionRepository;
 
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -23,6 +27,44 @@ public class RemedySuggestionService {
         this.medicineRepository = medicineRepository;
     }
 
+    // Get the currently logged-in patient's email
+    private String getLoggedInEmail() {
+        Authentication authentication =
+                SecurityContextHolder.getContext().getAuthentication();
+
+        return authentication.getName();
+    }
+
+    // Verify that the medicine belongs to the logged-in patient
+    private void validateMedicineOwnership(Medicine medicine) {
+        String loggedInEmail = getLoggedInEmail();
+
+        String ownerEmail = medicine.getPrescription()
+                .getPatient()
+                .getEmail();
+
+        if (!loggedInEmail.equalsIgnoreCase(ownerEmail)) {
+            throw new AccessDeniedException(
+                    "You are not allowed to access this medicine"
+            );
+        }
+    }
+
+    // Convert entity to DTO
+    private RemedySuggestionDTO convertToDTO(
+            RemedySuggestion suggestion) {
+
+        RemedySuggestionDTO dto = new RemedySuggestionDTO();
+
+        dto.setId(suggestion.getId());
+        dto.setMedicineId(suggestion.getMedicine().getId());
+        dto.setRemedyText(suggestion.getRemedyText());
+        dto.setSource(suggestion.getSource());
+
+        return dto;
+    }
+
+    // Create remedy suggestion
     public RemedySuggestionDTO createRemedySuggestion(
             RemedySuggestionDTO remedySuggestionDTO) {
 
@@ -35,38 +77,33 @@ public class RemedySuggestionService {
                         )
                 );
 
+        // Check ownership before creating
+        validateMedicineOwnership(medicine);
+
         if (remedySuggestionRepository.existsByMedicine_Id(
                 medicine.getId())) {
+
             throw new RuntimeException(
                     "A remedy suggestion already exists for this medicine"
             );
         }
 
-        RemedySuggestion remedySuggestion = new RemedySuggestion();
+        RemedySuggestion suggestion = new RemedySuggestion();
 
-        remedySuggestion.setMedicine(medicine);
-        remedySuggestion.setRemedyText(
+        suggestion.setMedicine(medicine);
+        suggestion.setRemedyText(
                 remedySuggestionDTO.getRemedyText()
         );
-        remedySuggestion.setSource(
+        suggestion.setSource(
                 remedySuggestionDTO.getSource()
         );
 
         RemedySuggestion savedSuggestion =
-                remedySuggestionRepository.save(remedySuggestion);
+                remedySuggestionRepository.save(suggestion);
 
-        RemedySuggestionDTO responseDTO =
-                new RemedySuggestionDTO();
-
-        responseDTO.setId(savedSuggestion.getId());
-        responseDTO.setMedicineId(
-                savedSuggestion.getMedicine().getId()
-        );
-        responseDTO.setRemedyText(savedSuggestion.getRemedyText());
-        responseDTO.setSource(savedSuggestion.getSource());
-
-        return responseDTO;
+        return convertToDTO(savedSuggestion);
     }
+
     // Get remedy suggestion by ID
     public RemedySuggestionDTO getRemedySuggestionById(Long id) {
 
@@ -79,21 +116,26 @@ public class RemedySuggestionService {
                                 )
                         );
 
-        RemedySuggestionDTO responseDTO =
-                new RemedySuggestionDTO();
+        // Check ownership through the associated medicine
+        validateMedicineOwnership(suggestion.getMedicine());
 
-        responseDTO.setId(suggestion.getId());
-        responseDTO.setMedicineId(
-                suggestion.getMedicine().getId()
-        );
-        responseDTO.setRemedyText(suggestion.getRemedyText());
-        responseDTO.setSource(suggestion.getSource());
-
-        return responseDTO;
+        return convertToDTO(suggestion);
     }
+
     // Get remedy suggestion by medicine ID
     public RemedySuggestionDTO getRemedySuggestionByMedicineId(
             Long medicineId) {
+
+        // Check that the medicine exists and belongs to this patient
+        Medicine medicine = medicineRepository
+                .findById(medicineId)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Medicine not found with ID: " + medicineId
+                        )
+                );
+
+        validateMedicineOwnership(medicine);
 
         RemedySuggestion suggestion =
                 remedySuggestionRepository.findByMedicine_Id(medicineId)
@@ -104,16 +146,6 @@ public class RemedySuggestionService {
                                 )
                         );
 
-        RemedySuggestionDTO responseDTO =
-                new RemedySuggestionDTO();
-
-        responseDTO.setId(suggestion.getId());
-        responseDTO.setMedicineId(
-                suggestion.getMedicine().getId()
-        );
-        responseDTO.setRemedyText(suggestion.getRemedyText());
-        responseDTO.setSource(suggestion.getSource());
-
-        return responseDTO;
+        return convertToDTO(suggestion);
     }
 }
