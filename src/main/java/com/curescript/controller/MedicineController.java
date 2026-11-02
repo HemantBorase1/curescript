@@ -1,3 +1,4 @@
+
 package com.curescript.controller;
 
 import com.curescript.dto.MedicineDTO;
@@ -20,9 +21,10 @@ public class MedicineController {
         this.medicineService = medicineService;
     }
 
+    // Create Medicine
     @PostMapping
     public ResponseEntity<MedicineDTO> createMedicine(
-          @Valid @RequestBody MedicineDTO medicineDTO) {
+            @Valid @RequestBody MedicineDTO medicineDTO) {
 
         MedicineDTO createdMedicine =
                 medicineService.createMedicine(medicineDTO);
@@ -32,6 +34,7 @@ public class MedicineController {
                 .body(createdMedicine);
     }
 
+    // Get Medicine By ID
     @GetMapping("/{id}")
     public ResponseEntity<MedicineDTO> getMedicineById(
             @PathVariable Long id) {
@@ -42,16 +45,36 @@ public class MedicineController {
         return ResponseEntity.ok(medicineDTO);
     }
 
+    // Get All Medicines By Prescription ID
     @GetMapping("/prescription/{prescriptionId}")
-    public ResponseEntity<List<MedicineDTO>>
-    getMedicinesByPrescriptionId(
+    public ResponseEntity<List<MedicineDTO>> getMedicinesByPrescriptionId(
             @PathVariable Long prescriptionId) {
 
         List<MedicineDTO> medicines =
-                medicineService.getMedicinesByPrescriptionId(
-                        prescriptionId
-                );
+                medicineService.getMedicinesByPrescriptionId(prescriptionId);
 
         return ResponseEntity.ok(medicines);
     }
+
+    // Verify Medicine
+    @PutMapping("/{medicineId}/verify")
+    public ResponseEntity<MedicineDTO> verifyMedicine(
+            @PathVariable Long medicineId) {
+
+        MedicineDTO verifiedMedicine =
+                medicineService.verifyMedicine(medicineId);
+
+        return ResponseEntity.ok(verifiedMedicine);
+    }
+    @PutMapping("/{medicineId}")
+    public ResponseEntity<MedicineDTO> updateMedicine(
+            @PathVariable Long medicineId,
+            @RequestBody MedicineDTO medicineDTO) {
+
+        MedicineDTO updatedMedicine =
+                medicineService.updateMedicine(medicineId, medicineDTO);
+
+        return ResponseEntity.ok(updatedMedicine);
+    }
 }
+

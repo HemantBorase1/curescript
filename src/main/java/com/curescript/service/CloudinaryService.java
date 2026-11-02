@@ -19,13 +19,13 @@ public class CloudinaryService {
         this.cloudinary = cloudinary;
     }
 
+
     public String uploadPrescriptionImage(MultipartFile file)
             throws IOException {
 
-        if (file == null || file.isEmpty()) {
+        if (file.getSize() > 10 * 1024 * 1024) {
             throw new IllegalArgumentException(
-                    "Please select a prescription image"
-            );
+                    "Prescription image must be under 10 MB");
         }
 
         String contentType = file.getContentType();

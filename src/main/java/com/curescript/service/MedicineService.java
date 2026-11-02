@@ -12,6 +12,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -140,59 +141,140 @@ public class MedicineService {
     }
 
     // Get all medicines for a prescription
-    public List<MedicineDTO> getMedicinesByPrescriptionId(
-            Long prescriptionId) {
+    public List<MedicineDTO> getMedicinesByPrescriptionId(Long prescriptionId) {
 
-        // Step 1: Find the prescription
         Prescription prescription = prescriptionRepository
                 .findById(prescriptionId)
                 .orElseThrow(() ->
-                        new ResourceNotFoundException(
-                                "Prescription not found with ID: "
-                                        + prescriptionId
-                        )
-                );
+                        new ResourceNotFoundException("Prescription not found"));
 
-        // Step 2: Get the logged-in patient's email
         Authentication authentication =
                 SecurityContextHolder.getContext().getAuthentication();
 
-        String loggedInEmail = authentication.getName();
+        if (authentication == null
+                || !authentication.isAuthenticated()
+                || !prescription.getPatient().getEmail()
+                .equalsIgnoreCase(authentication.getName())) {
 
-        // Step 3: Check prescription ownership
-        String prescriptionOwnerEmail =
-                prescription.getPatient().getEmail();
-
-        if (!loggedInEmail.equalsIgnoreCase(prescriptionOwnerEmail)) {
             throw new AccessDeniedException(
-                    "You are not allowed to access these medicines"
-            );
+                    "You cannot access this prescription");
         }
 
-        // Step 4: Retrieve medicines for this prescription
         List<Medicine> medicines =
                 medicineRepository.findByPrescription_Id(prescriptionId);
 
-        // Step 5: Convert medicines to DTOs
-        List<MedicineDTO> medicineDTOs = new ArrayList<>();
+        return medicines.stream()
+                .map(medicine -> {
+                    MedicineDTO dto = new MedicineDTO();
+                    dto.setId(medicine.getId());
+                    dto.setPrescriptionId(prescriptionId);
+                    dto.setName(medicine.getName());
+                    dto.setDosage(medicine.getDosage());
+                    dto.setFrequency(medicine.getFrequency());
+                    dto.setDuration(medicine.getDuration());
+                    dto.setPlainExplanation(medicine.getPlainExplanation());
+                    dto.setUncertainFields(medicine.getUncertainFields());
+                    dto.setVerified(medicine.isVerified());
+                    return dto;
+                })
+                .toList();
+    }
 
-        for (Medicine medicine : medicines) {
+    @Transactional
+    public MedicineDTO verifyMedicine(Long medicineId) {
 
-            MedicineDTO dto = new MedicineDTO();
+        Medicine medicine = medicineRepository.findById(medicineId)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Medicine not found"));
 
-            dto.setId(medicine.getId());
-            dto.setPrescriptionId(
-                    medicine.getPrescription().getId()
-            );
-            dto.setName(medicine.getName());
-            dto.setDosage(medicine.getDosage());
-            dto.setFrequency(medicine.getFrequency());
-            dto.setDuration(medicine.getDuration());
-            dto.setPlainExplanation(medicine.getPlainExplanation());
+        Authentication authentication =
+                SecurityContextHolder.getContext().getAuthentication();
 
-            medicineDTOs.add(dto);
+        if (authentication == null
+                || !authentication.isAuthenticated()
+                || !medicine.getPrescription().getPatient().getEmail()
+                .equalsIgnoreCase(authentication.getName())) {
+
+            throw new AccessDeniedException(
+                    "You cannot verify this medicine");
         }
 
-        return medicineDTOs;
+        medicine.setVerified(true);
+
+        medicineRepository.save(medicine);
+
+        MedicineDTO dto = new MedicineDTO();
+        dto.setId(medicine.getId());
+        dto.setPrescriptionId(medicine.getPrescription().getId());
+        dto.setName(medicine.getName());
+        dto.setDosage(medicine.getDosage());
+        dto.setFrequency(medicine.getFrequency());
+        dto.setDuration(medicine.getDuration());
+        dto.setPlainExplanation(medicine.getPlainExplanation());
+        dto.setUncertainFields(medicine.getUncertainFields());
+        dto.setVerified(medicine.isVerified());
+
+        return dto;
+    }
+
+    @Transactional
+    public MedicineDTO updateMedicine(Long medicineId, MedicineDTO medicineDTO) {
+
+        // Step 1: Find medicine
+        Medicine medicine = medicineRepository.findById(medicineId)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Medicine not found"));
+
+        // Step 2: Get logged-in patient
+        Authentication authentication =
+                SecurityContextHolder.getContext().getAuthentication();
+
+        // Step 3: Check ownership
+        if (authentication == null
+                || !authentication.isAuthenticated()
+                || !medicine.getPrescription().getPatient().getEmail()
+                .equalsIgnoreCase(authentication.getName())) {
+
+            throw new AccessDeniedException(
+                    "You cannot update this medicine");
+        }
+
+        // Step 4: Update medicine details
+        if (medicineDTO.getName() != null) {
+            medicine.setName(medicineDTO.getName());
+        }
+
+        if (medicineDTO.getDosage() != null) {
+            medicine.setDosage(medicineDTO.getDosage());
+        }
+
+        if (medicineDTO.getFrequency() != null) {
+            medicine.setFrequency(medicineDTO.getFrequency());
+        }
+
+        if (medicineDTO.getDuration() != null) {
+            medicine.setDuration(medicineDTO.getDuration());
+        }
+
+        // Step 5: Mark as not reviewed after editing
+        medicine.setVerified(false);
+
+        // Step 6: Save medicine
+        Medicine updatedMedicine = medicineRepository.save(medicine);
+
+        // Step 7: Convert to DTO
+        MedicineDTO dto = new MedicineDTO();
+
+        dto.setId(updatedMedicine.getId());
+        dto.setPrescriptionId(updatedMedicine.getPrescription().getId());
+        dto.setName(updatedMedicine.getName());
+        dto.setDosage(updatedMedicine.getDosage());
+        dto.setFrequency(updatedMedicine.getFrequency());
+        dto.setDuration(updatedMedicine.getDuration());
+        dto.setPlainExplanation(updatedMedicine.getPlainExplanation());
+        dto.setUncertainFields(updatedMedicine.getUncertainFields());
+        dto.setVerified(updatedMedicine.isVerified());
+
+        return dto;
     }
 }
